@@ -66,13 +66,15 @@
                 signal: controller.signal
             });
             const result = await response.json();
-            const providerMessage = typeof result?.message === 'string' ? result.message : '';
-            if (/activat|confirm.{0,40}(?:email|form)/i.test(providerMessage)) {
-                showStatus('This contact form is awaiting email verification. Please use the email address alongside for now. Your message is still here.', 'error');
-                return;
-            }
             // FormSubmit can return HTTP 200 with success: "false".
-            if (!response.ok || (result?.success !== true && result?.success !== 'true')) {
+            const accepted = response.ok && (result?.success === true || result?.success === 'true');
+            if (!accepted) {
+                // Successful acknowledgements may mention an already activated form.
+                const providerMessage = typeof result?.message === 'string' ? result.message : '';
+                if (/activat|confirm.{0,40}(?:email|form)/i.test(providerMessage)) {
+                    showStatus('This contact form is awaiting email verification. Please use the email address alongside for now. Your message is still here.', 'error');
+                    return;
+                }
                 throw new Error('Message was not accepted by the email service.');
             }
             form.reset();
